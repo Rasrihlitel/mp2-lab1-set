@@ -13,45 +13,73 @@ static TBitField FAKE_BITFIELD(1);
 
 TBitField::TBitField(int len)
 {
+    if (len <= 0) throw "Размер нулевой и менее";
     BitLen = len;
+    MemLen = BitLen / sizeof(int) * 8 + 1;
+    pMem = new TELEM[MemLen];
+    for (int i = 0; i < MemLen; i++) {
+        pMem[i] = 0;
+    }
 }
 
 TBitField::TBitField(const TBitField &bf) // конструктор копирования
 {
+    BitLen = bf.BitLen;
+    MemLen = bf.MemLen;
+    pMem = new TELEM[MemLen];
+    for (int i = 0; i < MemLen; i++) {
+        pMem[i] = bf.pMem[i];
+    }
 }
 
 TBitField::~TBitField()
 {
+    delete[] pMem;
 }
 
 int TBitField::GetMemIndex(const int n) const // индекс Мем для бита n
 {
-    return FAKE_INT;
+    if (n < 0 || n >= BitLen) throw "Бит выходит из диапазона характеристического вектора";
+    return n / sizeof(TELEM) * 8;
 }
 
 TELEM TBitField::GetMemMask(const int n) const // битовая маска для бита n
 {
-    return FAKE_INT;
+    if (n < 0 || n >= BitLen) throw "Бит выходит из диапазона характеристического вектора";
+    TELEM res = 1;
+    int idBit = n % sizeof(TELEM);
+    res <<= idBit;
+    return res;
 }
 
 // доступ к битам битового поля
 
 int TBitField::GetLength(void) const // получить длину (к-во битов)
 {
-  return FAKE_INT;
+  return BitLen;
 }
 
 void TBitField::SetBit(const int n) // установить бит
 {
+    if (n < 0 || n >= BitLen) throw "Бит выходит из диапазона характеристического вектора";
+    TELEM mask = GetMemMask(n);
+    pMem[GetMemIndex(n)] |= mask;
 }
 
 void TBitField::ClrBit(const int n) // очистить бит
 {
+    if (n < 0 || n >= BitLen) throw "Бит выходит из диапазона характеристического вектора";
+    TELEM mask = ~(GetMemMask(n));
+    pMem[GetMemIndex(n)] &= mask;
 }
 
 int TBitField::GetBit(const int n) const // получить значение бита
 {
-  return FAKE_INT;
+    TELEM mask = GetMemMask(n);
+    int res = pMem[GetMemIndex(n)];
+    res &= mask;
+    if (res == 0) return 0;
+    else return 1;
 }
 
 // битовые операции
@@ -95,5 +123,8 @@ istream &operator>>(istream &istr, TBitField &bf) // ввод
 
 ostream &operator<<(ostream &ostr, const TBitField &bf) // вывод
 {
+    for (int i = 0; i < bf.BitLen; i++) {
+        ostr << bf.GetBit(i);
+    }
     return ostr;
 }
